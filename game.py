@@ -1,7 +1,6 @@
-# game.py
 import pygame
 from board import GameBoard
-from player import Player
+from player import PlayerAI
 from recipes import RecipeManager
 
 pygame.init()
@@ -12,11 +11,14 @@ WINDOW = pygame.display.set_mode((WIDTH * CELL_SIZE, HEIGHT * CELL_SIZE))
 pygame.display.set_caption("Overcooked - Mini")
 
 COLORS = {
-    0: (200, 200, 200),
-    1: (50, 50, 50),
-    2: (0, 200, 0),
-    4: (0, 0, 200),
+    0: (200, 200, 200),   # sol vide
+    1: (50, 50, 50),      # mur
+    2: (255, 0, 0),       # tomate - rouge
+    5: (0, 255, 0),       # salade - vert
+    6: (255, 255, 0),     # oignon - jaune
+    4: (255, 255, 255),       # assiette - blanc
 }
+
 
 def draw(board, players, recipe_manager):
     for y in range(board.height):
@@ -26,7 +28,8 @@ def draw(board, players, recipe_manager):
                              (x*CELL_SIZE, y*CELL_SIZE, CELL_SIZE, CELL_SIZE))
 
     for i, p in enumerate(players):
-        color = (200, 0, 0) if i == 0 else (0, 200, 200)
+        color = (0, 0, 150)  # joueur IA en bleu foncé
+
         pygame.draw.rect(WINDOW, color,
                          (p.x*CELL_SIZE, p.y*CELL_SIZE, CELL_SIZE, CELL_SIZE))
 
@@ -40,15 +43,11 @@ def main():
     clock = pygame.time.Clock()
     board = GameBoard()
     recipe_manager = RecipeManager()
+    player = PlayerAI(0, 0)
 
-    player1 = Player(0, 0, {"up": pygame.K_z, "down": pygame.K_s,
-                            "left": pygame.K_q, "right": pygame.K_d,
-                            "action": pygame.K_e})
-    player2 = Player(9, 9, {"up": pygame.K_UP, "down": pygame.K_DOWN,
-                            "left": pygame.K_LEFT, "right": pygame.K_RIGHT,
-                            "action": pygame.K_m})
-
-    players = [player1, player2]
+    # 🟢 Demande les ingrédients à l'utilisateur au démarrage
+    ingredients = input("Entrez les ingrédients à livrer (ex: salade tomate oignon) : ").split()
+    player.enqueue_ingredients(ingredients)
 
     running = True
     while running:
@@ -57,18 +56,11 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
 
-        keys = pygame.key.get_pressed()
-        for p in players:
-            if keys[p.controls["up"]]: p.move(0, -1, board)
-            if keys[p.controls["down"]]: p.move(0, 1, board)
-            if keys[p.controls["left"]]: p.move(-1, 0, board)
-            if keys[p.controls["right"]]: p.move(1, 0, board)
-            if keys[p.controls["action"]]:
-                result = p.interact(board)
-                if result and result[0] == "deliver":
-                    recipe_manager.check_delivery(result[1])
+        result = player.update(board)
+        if result and result[0] == "deliver":
+            recipe_manager.check_delivery(result[1])
 
-        draw(board, players, recipe_manager)
+        draw(board, [player], recipe_manager)
 
     pygame.quit()
 

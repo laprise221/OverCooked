@@ -3,12 +3,18 @@ class GameBoard:
     def __init__(self, width=10, height=10):
         self.width = width
         self.height = height
-        # matrice : 0 = vide, 1 = mur, 2 = ingrédient, 3 = planche, 4 = assiette
+        # 0 = vide, 1 = mur, 2 = tomate, 5 = salade, 6 = oignon, 4 = assiette
         self.grid = [[0 for _ in range(width)] for _ in range(height)]
 
-        # exemple : placer un ingrédient et une assiette
-        self.grid[2][2] = 2  # ingrédient
-        self.grid[4][4] = 4  # assiette
+        # 🍅 Tomate
+        self.grid[2][2] = 2
+        # 🥬 Salade
+        self.grid[3][2] = 5
+        # 🧅 Oignon
+        self.grid[4][2] = 6
+
+        # 🍽️ Assiette (sortie)
+        self.grid[6][6] = 4
 
     def is_walkable(self, x, y):
         return 0 <= x < self.width and 0 <= y < self.height and self.grid[y][x] != 1
