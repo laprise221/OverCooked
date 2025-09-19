@@ -10,31 +10,42 @@ WIDTH, HEIGHT = 10, 10
 WINDOW = pygame.display.set_mode((WIDTH * CELL_SIZE, HEIGHT * CELL_SIZE))
 pygame.display.set_caption("Overcooked - Mini")
 
+# Couleurs des cases
 COLORS = {
     0: (200, 200, 200),   # sol vide
     1: (50, 50, 50),      # mur
     2: (255, 0, 0),       # tomate
-    5: (0, 255, 0),       # salade
-    6: (255, 255, 0),     # oignon
-    10: (150, 75, 0),     # viande
-    11: (255, 228, 181),  # pain
-    4: (255, 255, 255),   # assiette (sortie)
-    7: (139, 69, 19),     # planche
-    8: (100, 100, 100),   # poêle
-    9: (150, 150, 255),   # table assemblage
+    3: (255, 255, 0),     # oignon
+    4: (0, 255, 0),       # salade
+    5: (150, 75, 0),      # viande
+    6: (255, 228, 181),   # pain
+    7: (255, 160, 122),   # pâte
+    8: (139, 69, 19),     # planche à découper
+    9: (100, 100, 100),   # poêle
+    10: (150, 150, 255),  # table assemblage
+    11: (255, 255, 255),  # assiette / sortie
+    12: (255, 192, 203),  # fromage
 }
 
 def draw(board, players, recipe_manager):
+    # Dessiner le plateau
     for y in range(board.height):
         for x in range(board.width):
             cell = board.get_cell(x, y)
             pygame.draw.rect(WINDOW, COLORS.get(cell, (255, 255, 255)),
                              (x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE))
 
+    # Dessiner les joueurs
     for p in players:
         pygame.draw.rect(WINDOW, (0, 0, 150),
                          (p.x * CELL_SIZE, p.y * CELL_SIZE, CELL_SIZE, CELL_SIZE))
+        # Afficher ce que le joueur tient
+        if p.holding:
+            font = pygame.font.SysFont(None, 20)
+            text = font.render(p.holding, True, (0, 0, 0))
+            WINDOW.blit(text, (p.x * CELL_SIZE + 2, p.y * CELL_SIZE + 2))
 
+    # Afficher le score
     font = pygame.font.SysFont(None, 30)
     score_text = font.render(f"Score: {recipe_manager.score}", True, (0, 0, 0))
     WINDOW.blit(score_text, (10, 10))
@@ -47,6 +58,8 @@ def main():
     recipe_manager = RecipeManager()
     player = PlayerAI(5, 5)
 
+    # Sélection de la recette
+    print("Recettes disponibles :", ", ".join(recipe_manager.recipes.keys()))
     recipe_name = input("Quel plat souhaitez-vous préparer ? ").strip().lower()
     steps = recipe_manager.get_recipe(recipe_name)
 
@@ -63,6 +76,7 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
 
+        # Mise à jour de l'IA
         result = player.update(board)
         if result and result[0] == "deliver":
             delivered_items = result[1]

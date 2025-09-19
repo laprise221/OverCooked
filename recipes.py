@@ -10,7 +10,19 @@ class RecipeManager:
                 {"ingredient": "salade", "action": "couper"},
                 {"ingredient": "tomate", "action": "couper"},
                 {"ingredient": "oignon", "action": "couper"},
-            ]
+            ],
+            "pizza": [
+                {"ingredient": "pate"},
+                {"ingredient": "fromage","action": "couper" },
+                {"ingredient": "tomate", "action": "couper"},
+                {"ingredient": "oignon", "action": "cuire"},
+            ],
+            "burger": [
+                {"ingredient": "pain"},
+                {"ingredient": "viande", "action": "cuire"},
+                {"ingredient": "fromage","action": "couper"},
+                {"ingredient": "salade", "action": "couper"},
+            ],
         }
         self.score = 0
 
