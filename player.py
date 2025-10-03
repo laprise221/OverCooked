@@ -1,19 +1,5 @@
 class PlayerAI:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-        self.holding = None
-        self.order = None
-        self.path = []
-        self.target = None
-        self.current_ingredient = None
-        self.current_action = None
-        self.recipe_name = ""
-        self.recipe_steps = []
-        self.current_step_index = 0
-        self.processed_ingredients = []
-
-    # Dictionnaire global des ingrédients
+    # dictionnaire global des ingrédients (extensible)
     INGREDIENT_CODES = {
         "tomate": 2,
         "salade": 4,
@@ -24,6 +10,36 @@ class PlayerAI:
         "fromage": 12
     }
 
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.holding = None
+        self.order = None
+        self.path = []
+        self.target = None
+
+        # Pour gestion de recettes par étapes
+        self.current_ingredient = None
+        self.current_action = None
+        self.recipe_name = ""
+        self.recipe_steps = []
+        self.current_step_index = 0
+        self.processed_ingredients = []
+
+        # Pour compatibilité avec version 1 (queue simple)
+        self.ingredient_queue = []
+
+    # ---------- utilitaires (venant du 1er code) ----------
+    def enqueue_ingredients(self, ingredients):
+        """Ajoute une liste d’ingrédients à la file (mode simple)."""
+        self.ingredient_queue.extend(ingredients)
+
+    @classmethod
+    def register_ingredients(cls, mapping: dict):
+        """Ajouter de nouveaux ingrédients au mapping global."""
+        cls.INGREDIENT_CODES.update(mapping)
+
+    # ---------- gestion des ordres ----------
     def set_order(self, order, board=None, ingredient=None):
         self.order = order
         if ingredient:
@@ -54,6 +70,7 @@ class PlayerAI:
                     self.target = (x, y)
                     self.generate_path_to(x, y)
                     return
+        print(f"Source introuvable sur la carte : {ingredient}")
 
     def find_and_go_to(self, board, cell_value):
         for y in range(board.height):
@@ -62,6 +79,7 @@ class PlayerAI:
                     self.target = (x, y)
                     self.generate_path_to(x, y)
                     return
+        print(f"Case {cell_value} introuvable")
 
     def generate_path_to(self, target_x, target_y):
         self.path = []
@@ -74,6 +92,7 @@ class PlayerAI:
         for y in range(self.y, target_y, step_y):
             self.path.append((target_x, y + step_y))
 
+    # ---------- boucle principale ----------
     def update(self, board):
         # Avancer sur le chemin si possible
         if self.path:
@@ -91,7 +110,7 @@ class PlayerAI:
             if expected_code and cell == expected_code:
                 print(f"{self.current_ingredient} ramassé")
                 self.holding = self.current_ingredient
-                # Supprimer de la grille
+                # ⚠️ version avancée supprime la source : à adapter si tu veux caisses infinies
                 board.remove_ingredient(self.x, self.y)
 
                 if self.current_action == "couper":
@@ -125,11 +144,12 @@ class PlayerAI:
 
         # Assemblage
         elif self.order == "assemble" and cell == 10:
-            print("Assemblage du plat")
-            self.processed_ingredients = [ing + "_assemble" for ing in self.processed_ingredients]
+            print("Assemblage du plat terminé")
+            # ⚠️ on NE change pas les noms, on garde tel quel
             self.current_step_index = len(self.recipe_steps)  # terminer les étapes
             self.process_next_step(board)
             return None
+
 
         # Livraison
         elif self.order == "deliver_plate" and cell == 11:
@@ -140,8 +160,15 @@ class PlayerAI:
             print(f"📦 Plat livré : {delivered}")
             return ("deliver", delivered, self.recipe_name)
 
+        # Mode compatibilité : si file simple non vide
+        if self.order is None and self.ingredient_queue:
+            next_ing = self.ingredient_queue.pop(0)
+            self.current_ingredient = next_ing
+            self.set_order("fetch_ingredient", board, next_ing)
+
         return None
 
+    # ---------- gestion des recettes avancées ----------
     def start_recipe(self, recipe_name, steps, board):
         self.recipe_name = recipe_name
         self.recipe_steps = steps

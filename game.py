@@ -10,7 +10,6 @@ WIDTH, HEIGHT = 10, 10
 WINDOW = pygame.display.set_mode((WIDTH * CELL_SIZE, HEIGHT * CELL_SIZE))
 pygame.display.set_caption("Overcooked - Mini")
 
-# Couleurs des cases
 COLORS = {
     0: (200, 200, 200),   # sol vide
     1: (50, 50, 50),      # mur
@@ -28,29 +27,35 @@ COLORS = {
 }
 
 def draw(board, players, recipe_manager):
-    # Dessiner le plateau
     for y in range(board.height):
         for x in range(board.width):
             cell = board.get_cell(x, y)
             pygame.draw.rect(WINDOW, COLORS.get(cell, (255, 255, 255)),
                              (x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE))
 
-    # Dessiner les joueurs
     for p in players:
         pygame.draw.rect(WINDOW, (0, 0, 150),
                          (p.x * CELL_SIZE, p.y * CELL_SIZE, CELL_SIZE, CELL_SIZE))
-        # Afficher ce que le joueur tient
         if p.holding:
             font = pygame.font.SysFont(None, 20)
             text = font.render(p.holding, True, (0, 0, 0))
             WINDOW.blit(text, (p.x * CELL_SIZE + 2, p.y * CELL_SIZE + 2))
 
-    # Afficher le score
     font = pygame.font.SysFont(None, 30)
-    score_text = font.render(f"Score: {recipe_manager.score}", True, (0, 0, 0))
+    score_text = font.render(f"Score: {recipe_manager.get_score()}", True, (0, 0, 0))
     WINDOW.blit(score_text, (10, 10))
 
     pygame.display.update()
+
+def ask_recipe(recipe_manager):
+    """Demande à l’utilisateur quelle recette préparer"""
+    print("Recettes disponibles :", ", ".join(recipe_manager.recipes.keys()))
+    recipe_name = input("Quel plat souhaitez-vous préparer ? ").strip().lower()
+    steps = recipe_manager.get_recipe(recipe_name)
+    if not steps:
+        print(f"❌ Recette '{recipe_name}' introuvable.")
+        return None, None
+    return recipe_name, steps
 
 def main():
     clock = pygame.time.Clock()
@@ -58,32 +63,41 @@ def main():
     recipe_manager = RecipeManager()
     player = PlayerAI(5, 5)
 
-    # Sélection de la recette
-    print("Recettes disponibles :", ", ".join(recipe_manager.recipes.keys()))
-    recipe_name = input("Quel plat souhaitez-vous préparer ? ").strip().lower()
-    steps = recipe_manager.get_recipe(recipe_name)
-
-    if not steps:
-        print(f"❌ Recette '{recipe_name}' introuvable.")
-        return
-
-    player.start_recipe(recipe_name, steps, board)
-
     running = True
     while running:
-        clock.tick(10)
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
+        # --- choisir une recette ---
+        recipe_name, steps = ask_recipe(recipe_manager)
+        if not steps:
+            break
 
-        # Mise à jour de l'IA
-        result = player.update(board)
-        if result and result[0] == "deliver":
-            delivered_items = result[1]
-            recipe_name = result[2]
-            recipe_manager.check_delivery(delivered_items, recipe_name)
+        # ✅ réinitialise la carte avec des ingrédients frais
+        board = GameBoard()
+        player.start_recipe(recipe_name, steps, board)
 
-        draw(board, [player], recipe_manager)
+        # --- exécution d’une commande ---
+        order_done = False
+        while not order_done and running:
+            clock.tick(10)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+
+            result = player.update(board)
+
+            if result and result[0] == "deliver":
+                delivered_items = result[1]
+                recipe_name = result[2]
+                recipe_manager.check_delivery(delivered_items, recipe_name)
+
+                # commande terminée
+                order_done = True
+
+                # demander à l’utilisateur s’il veut continuer
+                again = input("Voulez-vous une autre commande ? (o/n) : ").strip().lower()
+                if again != "o":
+                    running = False
+
+            draw(board, [player], recipe_manager)
 
     pygame.quit()
 
