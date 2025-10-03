@@ -47,3 +47,4 @@ Décrémenter le timer global.
 
 Afficher le score final.
 
+https://discord.gg/bCb742Er
