@@ -13,7 +13,6 @@ class PlayerAI:
         self.current_step_index = 0
         self.processed_ingredients = []
 
-    # Dictionnaire global des ingrédients
     INGREDIENT_CODES = {
         "tomate": 2,
         "salade": 4,
@@ -35,13 +34,13 @@ class PlayerAI:
         if order == "fetch_ingredient":
             self.find_and_go_to_ingredient(board, ingredient)
         elif order == "cut_ingredient":
-            self.find_and_go_to(board, 8)  # planche
+            self.find_and_go_to(board, 8)
         elif order == "cook_ingredient":
-            self.find_and_go_to(board, 9)  # poêle
+            self.find_and_go_to(board, 9)
         elif order == "assemble":
-            self.find_and_go_to(board, 10)  # table assemblage
+            self.find_and_go_to(board, 10)
         elif order == "deliver_plate":
-            self.find_and_go_to(board, 11)  # sortie / assiette
+            self.find_and_go_to(board, 11)
 
     def find_and_go_to_ingredient(self, board, ingredient):
         code = self.INGREDIENT_CODES.get(ingredient)
@@ -65,17 +64,14 @@ class PlayerAI:
 
     def generate_path_to(self, target_x, target_y):
         self.path = []
-        # Mouvement horizontal
         step_x = 1 if target_x > self.x else -1
         for x in range(self.x, target_x, step_x):
             self.path.append((x + step_x, self.y))
-        # Mouvement vertical
         step_y = 1 if target_y > self.y else -1
         for y in range(self.y, target_y, step_y):
             self.path.append((target_x, y + step_y))
 
     def update(self, board):
-        # Avancer sur le chemin si possible
         if self.path:
             next_x, next_y = self.path[0]
             if board.is_walkable(next_x, next_y):
@@ -85,13 +81,10 @@ class PlayerAI:
 
         cell = board.get_cell(self.x, self.y)
 
-        # Ramasser un ingrédient
         if self.order == "fetch_ingredient":
             expected_code = self.INGREDIENT_CODES.get(self.current_ingredient)
             if expected_code and cell == expected_code:
-                print(f"{self.current_ingredient} ramassé")
                 self.holding = self.current_ingredient
-                # Supprimer de la grille
                 board.remove_ingredient(self.x, self.y)
 
                 if self.current_action == "couper":
@@ -105,39 +98,30 @@ class PlayerAI:
                     self.process_next_step(board)
             return None
 
-        # Couper
         elif self.order == "cut_ingredient" and cell == 8:
-            print(f"{self.holding} coupé")
             self.processed_ingredients.append(f"{self.holding}_coupé")
             self.holding = None
             self.current_step_index += 1
             self.process_next_step(board)
             return None
 
-        # Cuire
         elif self.order == "cook_ingredient" and cell == 9:
-            print(f"{self.holding} cuit")
             self.processed_ingredients.append(f"{self.holding}_cuit")
             self.holding = None
             self.current_step_index += 1
             self.process_next_step(board)
             return None
 
-        # Assemblage
         elif self.order == "assemble" and cell == 10:
-            print("Assemblage du plat")
-            self.processed_ingredients = [ing + "_assemble" for ing in self.processed_ingredients]
-            self.current_step_index = len(self.recipe_steps)  # terminer les étapes
+            self.current_step_index = len(self.recipe_steps)
             self.process_next_step(board)
             return None
 
-        # Livraison
         elif self.order == "deliver_plate" and cell == 11:
             delivered = self.processed_ingredients
             self.processed_ingredients = []
             self.order = None
             self.recipe_steps = []
-            print(f"📦 Plat livré : {delivered}")
             return ("deliver", delivered, self.recipe_name)
 
         return None
@@ -151,14 +135,12 @@ class PlayerAI:
 
     def process_next_step(self, board):
         if self.current_step_index >= len(self.recipe_steps):
-            # Recette terminée : assemblage puis livraison
             if self.order != "assemble":
                 self.set_order("assemble", board)
             else:
                 self.set_order("deliver_plate", board)
             return
 
-        # Étape suivante
         step = self.recipe_steps[self.current_step_index]
         self.current_ingredient = step["ingredient"]
         self.current_action = step.get("action")

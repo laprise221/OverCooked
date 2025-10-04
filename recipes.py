@@ -13,7 +13,7 @@ class RecipeManager:
             ],
             "pizza": [
                 {"ingredient": "pate"},
-                {"ingredient": "fromage","action": "couper" },
+                {"ingredient": "fromage","action": "couper"},
                 {"ingredient": "tomate", "action": "couper"},
                 {"ingredient": "oignon", "action": "cuire"},
             ],
@@ -24,6 +24,15 @@ class RecipeManager:
                 {"ingredient": "salade", "action": "couper"},
             ],
         }
+
+        # Points attribués par recette
+        self.recipe_points = {
+            "burger": 100,
+            "pizza": 120,
+            "salade": 80,
+            "sandwich": 90
+        }
+
         self.score = 0
 
     def get_recipe(self, name):
@@ -43,8 +52,9 @@ class RecipeManager:
                 expected.append(ingredient)
 
         if sorted(expected) == sorted(delivered_items):
-            print(f"✅ Recette {recipe_name} livrée avec succès ! +10 points")
-            self.score += 10
+            points = self.recipe_points.get(recipe_name, 100)
+            print(f"✅ Recette {recipe_name} livrée avec succès ! +{points} points")
+            self.score += points
             return True
         else:
             print(f"❌ Mauvais plat livré.\nAttendu: {expected}\nReçu: {delivered_items}")
