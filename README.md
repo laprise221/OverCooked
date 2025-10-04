@@ -11,8 +11,6 @@ Gérer les collisions (ne pas traverser murs ou objets fixes).
 
 Fournir une fonction pour tester si une action est possible (ramasser, déposer).
 
-👉 ChatGPT peut t’aider à coder une classe GameBoard en Python.
-
 🎨 Étudiant 2 – Affichage (Pygame)
 
 Créer une fenêtre avec Pygame.
@@ -22,9 +20,6 @@ Afficher la grille (carrés colorés = objets/joueurs).
 Dessiner le score et le timer en haut.
 
 Mettre à jour l’écran à chaque tick.
-
-👉 ChatGPT peut fournir un squelette Pygame avec grille colorée.
-Exemple : rouge = joueur 1, bleu = joueur 2, vert = ingrédients.
 
 🎹 Étudiant 3 – Contrôles & Joueurs
 
@@ -40,8 +35,6 @@ Stocker l’inventaire du joueur (objet porté).
 
 Communiquer avec le moteur (GameBoard) pour effectuer les actions.
 
-👉 ChatGPT peut générer une classe Player + gestion clavier.
-
 🍅 Étudiant 4 – Gameplay / Recettes / Score
 
 Définir les recettes (ex. salade = tomate + laitue).
@@ -54,3 +47,4 @@ Décrémenter le timer global.
 
 Afficher le score final.
 
+https://discord.gg/bCb742Er
