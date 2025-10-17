@@ -1,61 +1,113 @@
-class RecipeManager:
-    def __init__(self):
-        self.recipes = {
-            "sandwich": [
-                {"ingredient": "pain"},
-                {"ingredient": "viande", "action": "cuire"},
-                {"ingredient": "salade", "action": "couper"},
-            ],
-            "salade": [
-                {"ingredient": "salade", "action": "couper"},
-                {"ingredient": "tomate", "action": "couper"},
-                {"ingredient": "oignon", "action": "couper"},
-            ],
-            "pizza": [
-                {"ingredient": "pate"},
-                {"ingredient": "fromage","action": "couper"},
-                {"ingredient": "tomate", "action": "couper"},
-                {"ingredient": "oignon", "action": "cuire"},
-            ],
-            "burger": [
-                {"ingredient": "pain"},
-                {"ingredient": "viande", "action": "cuire"},
-                {"ingredient": "fromage","action": "couper"},
-                {"ingredient": "salade", "action": "couper"},
-            ],
-        }
+"""
+recipes.py
+Définit toutes les recettes disponibles dans le jeu
+"""
 
-        # Points attribués par recette
-        self.recipe_points = {
-            "burger": 100,
-            "pizza": 120,
-            "salade": 80,
-            "sandwich": 90
-        }
+# Dictionnaire des recettes avec leurs ingrédients requis
+recipes = {
+    "burger": {
+        "ingredients": [
+            "salade_coupe",
+            "tomate_coupe",
+            "oignon_coupe",
+            "viande_cuit",
+            "pain"
+        ],
+        "image": "images/burger.png",
+        "description": "Un délicieux burger avec salade, tomate, oignon, viande cuite et pain"
+    },
 
-        self.score = 0
+    "sandwich": {
+        "ingredients": [
+            "pain",
+            "fromage",
+            "tomate_coupe"
+        ],
+        "image": "images/sandwich.png",
+        "description": "Un sandwich simple au fromage et tomate"
+    },
+    "pizza": {
+        "ingredients": [
+            "pate",
+            "fromage",
+            "tomate_coupe",
+            "oignon_coupe"
+        ],
+        "image": "images/pizza.png",
+        "description": "Une pizza savoureuse avec pâte, fromage, tomate et oignon"
+    }
+}
 
-    def get_recipe(self, name):
-        return self.recipes.get(name, [])
+# Configuration des ingrédients et leurs traitements requis
+ingredient_config = {
+    "salade": {
+        "needs_cutting": True,
+        "needs_cooking": False,
+        "cutting_time": 2.0
+    },
+    "tomate": {
+        "needs_cutting": True,
+        "needs_cooking": False,
+        "cutting_time": 2.0
+    },
+    "oignon": {
+        "needs_cutting": True,
+        "needs_cooking": False,
+        "cutting_time": 2.0
+    },
+    "viande": {
+        "needs_cutting": False,
+        "needs_cooking": True,
+        "cooking_time": 3.0
+    },
+    "pain": {
+        "needs_cutting": False,
+        "needs_cooking": False
+    },
+    "fromage": {
+        "needs_cutting": False,
+        "needs_cooking": False
+    },
+      "pate": {
+        "needs_cutting": False,
+        "needs_cooking": True,
+        "cooking_time": 2.5
+    }
+}
 
-    def check_delivery(self, delivered_items, recipe_name):
-        expected_steps = self.recipes.get(recipe_name, [])
-        expected = []
-        for step in expected_steps:
-            ingredient = step["ingredient"]
-            action = step.get("action")
-            if action == "couper":
-                expected.append(f"{ingredient}_coupé")
-            elif action == "cuire":
-                expected.append(f"{ingredient}_cuit")
-            else:
-                expected.append(ingredient)
 
-        if sorted(expected) == sorted(delivered_items):
-            points = self.recipe_points.get(recipe_name, 100)
-            print(f"✅ Recette {recipe_name} livrée avec succès ! +{points} points")
-            self.score += points
-            return True
-        else:
-            print(f"❌ Mauvais plat livré.\nAttendu: {expected}\nReçu: {delivered_items}")
-            return False
+def get_recipe_by_name(recipe_name):
+    """
+    Retourne une recette par son nom
+    """
+    return recipes.get(recipe_name)
+
+
+def get_all_recipe_names():
+    """
+    Retourne la liste de tous les noms de recettes
+    """
+    return list(recipes.keys())
+
+
+def get_ingredient_config(ingredient_name):
+    """
+    Retourne la configuration d'un ingrédient
+    """
+    return ingredient_config.get(ingredient_name, {
+        "needs_cutting": False,
+        "needs_cooking": False
+    })
+
+
+def parse_ingredient_requirement(requirement):
+    """
+    Parse une exigence d'ingrédient (ex: "tomate_coupe")
+    Retourne (nom_base, état_requis)
+    """
+    if "_coupe" in requirement:
+        return requirement.replace("_coupe", ""), "coupe"
+    elif "_cuit" in requirement:
+        return requirement.replace("_cuit", ""), "cuit"
+    else:
+        return requirement, "cru"
