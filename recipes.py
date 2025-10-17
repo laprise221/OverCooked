@@ -25,6 +25,16 @@ recipes = {
         ],
         "image": "images/sandwich.png",
         "description": "Un sandwich simple au fromage et tomate"
+    },
+    "pizza": {
+        "ingredients": [
+            "pate",
+            "fromage",
+            "tomate_coupe",
+            "oignon_coupe"
+        ],
+        "image": "images/pizza.png",
+        "description": "Une pizza savoureuse avec pâte, fromage, tomate et oignon"
     }
 }
 
@@ -57,6 +67,11 @@ ingredient_config = {
     "fromage": {
         "needs_cutting": False,
         "needs_cooking": False
+    },
+      "pate": {
+        "needs_cutting": False,
+        "needs_cooking": True,
+        "cooking_time": 2.5
     }
 }
 

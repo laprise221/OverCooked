@@ -44,8 +44,10 @@ class Kitchen:
 
         ingredient_positions = [
             (1, 1, "salade"), (2, 1, "tomate"), (3, 1, "oignon"),
-            (1, 2, "pain"), (2, 2, "viande"), (3, 2, "fromage")
+            (1, 2, "pain"), (2, 2, "viande"), (3, 2, "fromage"),
+            (4, 1, "pate")
         ]
+
         for x, y, name in ingredient_positions:
             ing = Ingredient(name, "cru", (x, y))
             self.ingredients_available.append(ing)
@@ -96,7 +98,7 @@ class Kitchen:
                 return None
 
         # Ingrédients crus
-        for name in ["salade", "tomate", "oignon", "viande"]:
+        for name in ["salade", "tomate", "oignon", "viande", "pain", "fromage", "pate"]:
             self.images[f"{name}_crue"] = load(f"{name}_crue.png")
 
         # Ingrédients transformés
@@ -104,10 +106,6 @@ class Kitchen:
         self.images["tomate_coupe"] = load("tomate_coupe.png")
         self.images["oignon_coupe"] = load("oignon_coupe.png")
         self.images["viande_cuit"] = load("viande_cuit.png")
-
-        # Autres ingrédients
-        self.images["pain"] = load("pain.png")
-        self.images["fromage"] = load("fromage.png")
 
         # Outils et zones
         self.images["planche"] = load("planche.png")
@@ -133,11 +131,13 @@ class Kitchen:
                 if cell is None:
                     pygame.draw.rect(self.screen, self.colors['floor'], rect)
                 elif isinstance(cell, Ingredient):
+                    pygame.draw.rect(self.screen, (200, 200, 200), rect)
                     key = f"{cell.name}_{cell.state}" if cell.state != "cru" else f"{cell.name}_crue"
                     img = self.images.get(key)
                     if img:
                         offset = 8
                         self.screen.blit(img, (x * self.cell_size + offset, y * self.cell_size + offset))
+
                     else:
                         pygame.draw.rect(self.screen, (220, 220, 220), rect)
                 elif isinstance(cell, Tool):
@@ -165,6 +165,8 @@ class Kitchen:
         if current_order:
             text_order = font.render(f"Commande: {current_order}", True, (0, 0, 0))
             self.screen.blit(text_order, (300, self.height * self.cell_size + 10))
+        choices_text = font.render("1 = Burger    2 = Sandwich    3 = Pizza    Q = Quitter", True, (0, 0, 0))
+        self.screen.blit(choices_text, (10, self.height * self.cell_size + 50))
 
         # ✅ Rafraîchit après avoir tout affiché
         # --- 🍽️ Dessine le plat si présent ---
@@ -178,8 +180,10 @@ class Kitchen:
 
     # ----------------------------------------------------------------------
     def is_walkable(self, position):
+
         """Vérifie si une position est accessible"""
         x, y = position
+
         if x < 0 or x >= self.width or y < 0 or y >= self.height:
             return False
         cell = self.grid[y][x]
@@ -191,7 +195,8 @@ class Kitchen:
             return True
         if hasattr(cell, "occupied") and not cell.occupied:
             return True
-        return False
+        if cell is None:
+            return True
 
     # ----------------------------------------------------------------------
     def get_available_tool(self, tool_type):
