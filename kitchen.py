@@ -98,8 +98,11 @@ class Kitchen:
                 return None
 
         # Ingrédients crus
-        for name in ["salade", "tomate", "oignon", "viande", "pain", "fromage", "pate"]:
+        for name in ["salade", "tomate", "oignon", "viande"]:
             self.images[f"{name}_crue"] = load(f"{name}_crue.png")
+
+        for name in ["pain", "fromage", "pate"]:
+            self.images[name] = load(f"{name}.png")
 
         # Ingrédients transformés
         self.images["salade_coupe"] = load("salade_coupe.png")

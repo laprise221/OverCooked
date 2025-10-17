@@ -8,7 +8,7 @@ class Ingredient:
     Représente un ingrédient avec son état actuel
     """
 
-    def __init__(self, name, state="cru", position=None):
+    def __init__(self, name, state="crue", position=None):
         self.name = name
         self.state = state
         self.position = position
@@ -28,12 +28,12 @@ class Ingredient:
 
     def cut(self):
         """Change l'état de l'ingrédient en 'coupe'."""
-        if self.state == "cru":
+        if self.state == "crue":
             self.state = "coupe"
 
     def cook(self):
         """Change l'état de l'ingrédient en 'cuit'."""
-        if self.state in ["cru", "coupe"]:
+        if self.state in ["crue", "coupe"]:
             self.state = "cuit"
 
     def get_full_name(self):
@@ -72,6 +72,7 @@ class Tool:
         elif self.tool_type == "poele":
             ingredient.cook()
 
+        print(f"✅ {ingredient.name} est maintenant {ingredient.state}")
         return True
 
     def release(self):
