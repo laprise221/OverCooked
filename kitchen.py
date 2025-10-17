@@ -40,12 +40,12 @@ class Kitchen:
         """Configure toutes les zones de la cuisine"""
 
         # Zone des ingrédients (haut gauche) - Grille 16x16
-        self.stations['ingredients'] = Station('ingredients', (1, 1), (7, 3))
+        self.stations['ingredients'] = Station('ingredients', (1, 0), (7, 1))
 
         ingredient_positions = [
-            (1, 1, "salade"), (2, 1, "tomate"), (3, 1, "oignon"),
-            (4, 1, "pain"), (5, 1, "viande"), (6, 1, "fromage"),
-            (7, 1, "pate"),
+            (1, 0, "salade"), (2, 0, "tomate"), (3, 0, "oignon"),
+            (4, 0, "pain"), (5, 0, "viande"), (6, 0, "fromage"),
+            (7, 0, "pate"),
         ]
 
         for x, y, name in ingredient_positions:
@@ -54,15 +54,15 @@ class Kitchen:
             self.grid[y][x] = ing
 
         # Zone de découpe (droite haut)
-        self.stations['cutting'] = Station('cutting', (13, 1), (2, 1))
-        for pos in [(13, 1), (14, 1)]:
+        self.stations['cutting'] = Station('cutting', (13, 1), (1, 1))
+        for pos in [(13, 1)]:
             tool = Tool('planche', pos)
             self.tools.append(tool)
             self.grid[pos[1]][pos[0]] = tool
 
         # Zone de cuisson (droite milieu)
-        self.stations['cooking'] = Station('cooking', (13, 4), (2, 1))
-        for pos in [(13, 4), (14, 4)]:
+        self.stations['cooking'] = Station('cooking', (13, 4), (1, 1))
+        for pos in [(13, 4)]:
             tool = Tool('poele', pos)
             self.tools.append(tool)
             self.grid[pos[1]][pos[0]] = tool
@@ -286,7 +286,7 @@ class Kitchen:
         if cell is None:
             return True
         if isinstance(cell, str) and cell in ("assembly_table", "counter"):
-            return True
+            return False
         # Les outils et ingrédients ne sont PAS marchables
         if isinstance(cell, (Tool, Ingredient)):
             return False

@@ -103,20 +103,21 @@ class Agent:
 
     # ----------------------------------------------------------------------
     def _get_adjacent_positions(self, position):
-        """Retourne les 8 positions adjacentes à une position donnée"""
+        """Retourne les 4 positions adjacentes (haut, bas, gauche, droite)"""
         x, y = position
-        adjacent = []
-        for dx in [-1, 0, 1]:
-            for dy in [-1, 0, 1]:
-                if dx == 0 and dy == 0:
-                    continue
-                adjacent.append((x + dx, y + dy))
-        return adjacent
+        return [
+            (x + 1, y),  # droite
+            (x - 1, y),  # gauche
+            (x, y + 1),  # bas
+            (x, y - 1)   # haut
+        ]
 
     # ----------------------------------------------------------------------
     def _is_adjacent_to(self, pos1, pos2):
-        """Vérifie si deux positions sont adjacentes (8 directions)"""
-        return abs(pos1[0] - pos2[0]) <= 1 and abs(pos1[1] - pos2[1]) <= 1 and pos1 != pos2
+        """Vérifie si deux positions sont adjacentes (4 directions uniquement)"""
+        dx = abs(pos1[0] - pos2[0])
+        dy = abs(pos1[1] - pos2[1])
+        return (dx == 1 and dy == 0) or (dx == 0 and dy == 1)
 
     # ----------------------------------------------------------------------
     def _find_nearest_accessible_position(self, target_position):
