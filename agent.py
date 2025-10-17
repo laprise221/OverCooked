@@ -20,6 +20,7 @@ class Agent:
         self.assembled_ingredients = []  # Ingrédients pour le plat en cours
         self.current_action = "En attente"
         self.action_timer = 0
+        self.direction = "CF"  # Direction par défaut (face)
 
     # ----------------------------------------------------------------------
     def set_recipe(self, recipe_name, recipe_data):
@@ -290,6 +291,22 @@ class Agent:
         return False
 
     # ----------------------------------------------------------------------
+    def _update_direction(self, old_pos, new_pos):
+        """Met à jour la direction de l'agent selon son déplacement"""
+        dx = new_pos[0] - old_pos[0]
+        dy = new_pos[1] - old_pos[1]
+
+        # Détermine la direction
+        if dx > 0:
+            self.direction = "CDR"  # Droite
+        elif dx < 0:
+            self.direction = "CG"   # Gauche
+        elif dy > 0:
+            self.direction = "CF"   # Face (bas)
+        elif dy < 0:
+            self.direction = "CD"   # Dos (haut)
+
+    # ----------------------------------------------------------------------
     def _move_towards(self, target):
         """
         Déplace l'agent d'une case vers la cible en évitant les obstacles (A*).
@@ -336,8 +353,10 @@ class Agent:
             node = came_from[node]
         if path:
             next_x, next_y = path[-1]
+            old_pos = self.position.copy()
             self.position = [next_x, next_y]
+            self._update_direction(old_pos, self.position)
 
     # ----------------------------------------------------------------------
     def __repr__(self):
-        return f"Agent(pos={self.position}, holding={self.holding})"
+        return f"Agent(pos={self.position}, holding={self.holding}, direction={self.direction})"

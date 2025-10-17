@@ -109,6 +109,12 @@ class Kitchen:
         self.images["assembly_table"] = load("table.png")
         self.images["counter"] = load("counter.png")
 
+        # Images de l'agent selon la direction
+        self.images["agent_CD"] = load("agent_CD.png")  # Dos
+        self.images["agent_CDR"] = load("agent_CDR.png")  # Droite
+        self.images["agent_CF"] = load("agent_CF.png")  # Face
+        self.images["agent_CG"] = load("agent_CG.png")  # Gauche
+
         # Couleurs de base
         self.colors["floor"] = (240, 240, 220)
         self.colors["agent"] = (0, 100, 255)
@@ -177,11 +183,19 @@ class Kitchen:
                         self.screen.blit(small_img,
                                          (ix * self.cell_size + 10 + offset_x, iy * self.cell_size + 10 + offset_y))
 
-        # Agent
+        # Agent - Utilise l'image selon la direction
         ax, ay = agent.position
-        agent_rect = pygame.Rect(ax * self.cell_size + 5, ay * self.cell_size + 5,
-                                 self.cell_size - 10, self.cell_size - 10)
-        pygame.draw.circle(self.screen, self.colors['agent'], agent_rect.center, self.cell_size // 4)
+        agent_img_key = f"agent_{agent.direction}"
+        agent_img = self.images.get(agent_img_key)
+
+        if agent_img:
+            # Affiche l'image de l'agent
+            self.screen.blit(agent_img, (ax * self.cell_size + 5, ay * self.cell_size + 5))
+        else:
+            # Fallback sur le cercle bleu si l'image n'existe pas
+            agent_rect = pygame.Rect(ax * self.cell_size + 5, ay * self.cell_size + 5,
+                                     self.cell_size - 10, self.cell_size - 10)
+            pygame.draw.circle(self.screen, self.colors['agent'], agent_rect.center, self.cell_size // 4)
 
         # Dessine l'ingrédient porté par l'agent (si c'est un simple ingrédient)
         if agent.holding and isinstance(agent.holding, Ingredient):
