@@ -4,62 +4,67 @@ Point d'entrée du jeu Overcooked avec agent autonome
 """
 
 import pygame
-import random
 import sys
 from kitchen import Kitchen
 from agent import Agent
 from recipes import recipes, get_all_recipe_names
 
 pygame.init()
-pygame.display.set_mode((800, 600))
-pygame.display.set_caption("Overcooked - Agent autonome")
 
 class OvercookedGame:
     """
     Classe principale du jeu
     """
     def __init__(self):
-        self.kitchen = Kitchen(width=10, height=8, cell_size=80)
-        self.agent = Agent(position=[0, 7], kitchen=self.kitchen)
+        self.kitchen = Kitchen(width=16, height=16, cell_size=50)
+        self.agent = Agent(position=[0, 15], kitchen=self.kitchen)
         self.current_order = None
-        self.orders_completed = 0
+        self.score = 0
         self.running = True
+        self.recipe_buttons = []
+        self.awaiting_recipe_choice = True
 
-    def start_new_order(self, recipe_index=None):
+    def start_new_order(self, recipe_name):
         """
         Démarre une nouvelle commande
-        Si recipe_index est None, on attend que le joueur choisisse via le clavier
         """
-        all_recipes = get_all_recipe_names()
-
-        if recipe_index is None:
-            # Affiche les recettes sur l'écran
-            print("\n📋 Recettes disponibles :")
-            for i, name in enumerate(all_recipes, 1):
-                print(f"{i}. {name} - {recipes[name]['description']}")
-
-            self.current_order = None  # On attend le choix
-            self.awaiting_choice = True
+        if recipe_name not in recipes:
+            print(f"❌ Recette inconnue: {recipe_name}")
             return
 
-        # Choix fait
-        recipe_name = all_recipes[recipe_index]
         recipe_data = recipes[recipe_name]
         self.current_order = recipe_name
         self.agent.set_recipe(recipe_name, recipe_data)
+        self.awaiting_recipe_choice = False
 
         print("\n" + "="*60)
         print(f"📋 NOUVELLE COMMANDE: {recipe_name.upper()}")
         print(f"📝 Description: {recipe_data['description']}")
         print("="*60)
-        self.awaiting_choice = False
 
-# -------------------------------------------------------
+    def handle_button_click(self, mouse_pos):
+        """Gère les clics sur les boutons de recettes"""
+        for button_rect, recipe_name in self.recipe_buttons:
+            if button_rect.collidepoint(mouse_pos):
+                self.start_new_order(recipe_name)
+                return True
+        return False
+
     def run(self):
         """
         Boucle principale du jeu
         """
-        self.start_new_order()  # Affiche les recettes pour choix
+        all_recipes = get_all_recipe_names()
+
+        print("="*60)
+        print("🍳 OVERCOOKED - AGENT AUTONOME")
+        print("="*60)
+        print("📋 Recettes disponibles:")
+        for i, name in enumerate(all_recipes, 1):
+            print(f"  {i}. {name.capitalize()}")
+        print("="*60)
+        print("💡 Cliquez sur un bouton pour choisir une recette")
+        print("="*60)
 
         while self.running:
             for event in pygame.event.get():
@@ -68,20 +73,13 @@ class OvercookedGame:
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE or event.key == pygame.K_q:
                         self.running = False
-                    elif event.key == pygame.K_SPACE:
-                        # Démarre nouvelle commande si aucune tâche
-                        if not self.agent.task_queue and not self.agent.current_task:
-                            self.start_new_order()
-                    elif self.awaiting_choice:
-                        # Choix de la recette avec touches 1,2,…
-                        if pygame.K_1 <= event.key <= pygame.K_9:
-                            index = event.key - pygame.K_1
-                            all_recipes = get_all_recipe_names()
-                            if index < len(all_recipes):
-                                self.start_new_order(recipe_index=index)
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if self.awaiting_recipe_choice:
+                        mouse_pos = pygame.mouse.get_pos()
+                        self.handle_button_click(mouse_pos)
 
             # Met à jour l'agent si une commande est en cours
-            if self.current_order:
+            if self.current_order and not self.awaiting_recipe_choice:
                 self.agent.update()
 
                 # Vérifie si la commande est terminée
@@ -89,15 +87,25 @@ class OvercookedGame:
                     not self.agent.current_task and
                     self.agent.current_action.startswith("Livré")):
 
-                    self.orders_completed += 1
-                    print(f"\n🎉 Commande terminée! Total: {self.orders_completed}")
-                    print("⏳ Prochaine commande dans 3 secondes...")
-                    pygame.time.wait(3000)
-                    self.start_new_order()  # Affiche choix pour nouvelle commande
+                    self.score += 10
+                    print(f"\n🎉 Commande terminée! +10 points")
+                    print(f"📊 Score total: {self.score}")
+                    print("⏳ Nouvelle commande disponible...")
+                    pygame.time.wait(2000)
+
+                    self.current_order = None
+                    self.awaiting_recipe_choice = True
 
             # Affiche la cuisine
-            self.kitchen.draw(self.agent, self.current_order)
+            self.kitchen.draw(self.agent, self.current_order, self.score)
+
+            # Affiche les boutons si en attente de choix
+            if self.awaiting_recipe_choice:
+                self.recipe_buttons = self.kitchen.draw_recipe_buttons(all_recipes)
+
             self.kitchen.update()
+
+        pygame.quit()
 
 def main():
     """
@@ -107,9 +115,10 @@ def main():
     print("🍳 OVERCOOKED - AGENT AUTONOME")
     print("="*60)
     print("💡 Instructions:")
+    print("  - Cliquez sur un bouton pour choisir une recette")
     print("  - L'agent travaille automatiquement")
-    print("  - ESC: Quitter")
-    print("  - ESPACE: Nouvelle commande (après la fin d'une commande)")
+    print("  - +10 points par recette terminée")
+    print("  - Q ou ESC: Quitter")
     print("="*60)
 
     game = OvercookedGame()

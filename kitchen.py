@@ -7,7 +7,7 @@ class Kitchen:
     Représente la cuisine complète avec toutes ses zones
     """
 
-    def __init__(self, width=10, height=8, cell_size=80):
+    def __init__(self, width=16, height=16, cell_size=50):
         self.width = width
         self.height = height
         self.cell_size = cell_size
@@ -17,7 +17,7 @@ class Kitchen:
 
         # Initialisation Pygame
         pygame.init()
-        self.screen = pygame.display.set_mode((width * cell_size, height * cell_size + 100))
+        self.screen = pygame.display.set_mode((width * cell_size, height * cell_size + 150))
         pygame.display.set_caption("Overcooked - Agent Autonome")
         self.clock = pygame.time.Clock()
         self.font = pygame.font.Font(None, 28)
@@ -39,13 +39,13 @@ class Kitchen:
     def _setup_kitchen(self):
         """Configure toutes les zones de la cuisine"""
 
-        # Zone des ingrédients (haut gauche)
-        self.stations['ingredients'] = Station('ingredients', (1, 1), (3, 2))
+        # Zone des ingrédients (haut gauche) - Grille 16x16
+        self.stations['ingredients'] = Station('ingredients', (1, 1), (7, 3))
 
         ingredient_positions = [
             (1, 1, "salade"), (2, 1, "tomate"), (3, 1, "oignon"),
-            (1, 2, "pain"), (2, 2, "viande"), (3, 2, "fromage"),
-            (4, 1, "pate")
+            (4, 1, "pain"), (5, 1, "viande"), (6, 1, "fromage"),
+            (7, 1, "pate"),
         ]
 
         for x, y, name in ingredient_positions:
@@ -53,30 +53,31 @@ class Kitchen:
             self.ingredients_available.append(ing)
             self.grid[y][x] = ing
 
-        # Zone de découpe
-        self.stations['cutting'] = Station('cutting', (7, 1), (2, 1))
-        for pos in [(7, 1), (8, 1)]:
+        # Zone de découpe (droite haut)
+        self.stations['cutting'] = Station('cutting', (13, 1), (2, 1))
+        for pos in [(13, 1), (14, 1)]:
             tool = Tool('planche', pos)
             self.tools.append(tool)
             self.grid[pos[1]][pos[0]] = tool
 
-        # Zone de cuisson
-        self.stations['cooking'] = Station('cooking', (7, 3), (2, 1))
-        for pos in [(7, 3), (8, 3)]:
+        # Zone de cuisson (droite milieu)
+        self.stations['cooking'] = Station('cooking', (13, 4), (2, 1))
+        for pos in [(13, 4), (14, 4)]:
             tool = Tool('poele', pos)
             self.tools.append(tool)
             self.grid[pos[1]][pos[0]] = tool
 
-        # Table centrale (assemblage)
-        self.stations['assembly'] = Station('assembly', (4, 4), (2, 2))
-        for y in range(4, 6):
-            for x in range(4, 6):
+        # Table centrale (assemblage) - plus grande
+        self.stations['assembly'] = Station('assembly', (7, 7), (3, 3))
+        for y in range(7, 10):
+            for x in range(7, 10):
                 self.grid[y][x] = 'assembly_table'
 
-        # Comptoir (livraison)
-        self.stations['counter'] = Station('counter', (1, 6), (3, 1))
-        for x in range(1, 4):
-            self.grid[6][x] = 'counter'
+        # Comptoir (livraison) - en bas
+        self.stations['counter'] = Station('counter', (1, 12), (5, 2))
+        for y in range(12, 14):
+            for x in range(1, 6):
+                self.grid[y][x] = 'counter'
 
     # ----------------------------------------------------------------------
     def _load_images(self):
@@ -91,8 +92,7 @@ class Kitchen:
             path = os.path.join(base_path, name)
             try:
                 img = pygame.image.load(path).convert_alpha()
-                # ✅ Redimension dynamique avec marge
-                return pygame.transform.smoothscale(img, (self.cell_size - 16, self.cell_size - 16))
+                return pygame.transform.smoothscale(img, (self.cell_size - 10, self.cell_size - 10))
             except FileNotFoundError:
                 print(f"⚠️ Image manquante: {name}")
                 return None
@@ -121,7 +121,7 @@ class Kitchen:
         self.colors["agent"] = (0, 100, 255)
 
     # ----------------------------------------------------------------------
-    def draw(self, agent, current_order=None):
+    def draw(self, agent, current_order=None, score=0):
         """Dessine toute la cuisine"""
         self.screen.fill((240, 240, 220))
 
@@ -138,11 +138,8 @@ class Kitchen:
                     key = f"{cell.name}_{cell.state}" if cell.state != "cru" else f"{cell.name}_crue"
                     img = self.images.get(key)
                     if img:
-                        offset = 8
+                        offset = 5
                         self.screen.blit(img, (x * self.cell_size + offset, y * self.cell_size + offset))
-
-                    else:
-                        pygame.draw.rect(self.screen, (220, 220, 220), rect)
                 elif isinstance(cell, Tool):
                     img = self.images.get(cell.tool_type)
                     if img:
@@ -157,22 +154,33 @@ class Kitchen:
 
         # Agent
         ax, ay = agent.position
-        agent_rect = pygame.Rect(ax * self.cell_size + 10, ay * self.cell_size + 10,
-                                 self.cell_size - 20, self.cell_size - 20)
-        pygame.draw.circle(self.screen, self.colors['agent'], agent_rect.center, self.cell_size // 3)
+        agent_rect = pygame.Rect(ax * self.cell_size + 5, ay * self.cell_size + 5,
+                                 self.cell_size - 10, self.cell_size - 10)
+        pygame.draw.circle(self.screen, self.colors['agent'], agent_rect.center, self.cell_size // 4)
 
-        # Texte d'état
+        # Interface en bas
         font = self.font
-        text_action = font.render(f"Action: {agent.current_action}", True, (0, 0, 0))
-        self.screen.blit(text_action, (10, self.height * self.cell_size + 10))
-        if current_order:
-            text_order = font.render(f"Commande: {current_order}", True, (0, 0, 0))
-            self.screen.blit(text_order, (300, self.height * self.cell_size + 10))
-        choices_text = font.render("1 = Burger    2 = Sandwich    3 = Pizza    Q = Quitter", True, (0, 0, 0))
-        self.screen.blit(choices_text, (10, self.height * self.cell_size + 50))
+        ui_y = self.height * self.cell_size
 
-        # ✅ Rafraîchit après avoir tout affiché
-        # --- 🍽️ Dessine le plat si présent ---
+        # Score
+        score_text = font.render(f"Score: {score}", True, (0, 100, 0))
+        self.screen.blit(score_text, (10, ui_y + 10))
+
+        # Action
+        text_action = font.render(f"Action: {agent.current_action}", True, (0, 0, 0))
+        self.screen.blit(text_action, (10, ui_y + 40))
+
+        # Commande actuelle
+        if current_order:
+            text_order = font.render(f"Commande: {current_order}", True, (0, 0, 150))
+            self.screen.blit(text_order, (10, ui_y + 70))
+
+        # Instructions
+        instructions_text = self.small_font.render("Cliquez sur un bouton pour choisir une recette | Q = Quitter", True,
+                                                   (0, 0, 0))
+        self.screen.blit(instructions_text, (10, ui_y + 100))
+
+        # Dessine le plat si présent
         if self.current_dish_image and self.current_dish_pos:
             x, y = self.current_dish_pos
             rect_x = x * self.cell_size + self.cell_size // 4
@@ -182,8 +190,34 @@ class Kitchen:
         pygame.display.flip()
 
     # ----------------------------------------------------------------------
-    def is_walkable(self, position):
+    def draw_recipe_buttons(self, recipes_list):
+        """Dessine les boutons de sélection de recettes"""
+        button_y = self.height * self.cell_size + 120
+        button_width = 150
+        button_height = 40
+        button_spacing = 20
+        buttons = []
 
+        for i, recipe_name in enumerate(recipes_list):
+            button_x = 10 + i * (button_width + button_spacing)
+            button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
+
+            # Dessine le bouton
+            pygame.draw.rect(self.screen, (100, 150, 255), button_rect)
+            pygame.draw.rect(self.screen, (0, 0, 0), button_rect, 2)
+
+            # Texte du bouton
+            button_text = self.small_font.render(recipe_name.capitalize(), True, (255, 255, 255))
+            text_rect = button_text.get_rect(center=button_rect.center)
+            self.screen.blit(button_text, text_rect)
+
+            buttons.append((button_rect, recipe_name))
+
+        pygame.display.flip()
+        return buttons
+
+    # ----------------------------------------------------------------------
+    def is_walkable(self, position):
         """Vérifie si une position est accessible"""
         x, y = position
 
@@ -194,12 +228,9 @@ class Kitchen:
             return True
         if isinstance(cell, str) and cell in ("assembly_table", "counter"):
             return True
-        if isinstance(cell, Ingredient):
-            return True
         if hasattr(cell, "occupied") and not cell.occupied:
             return True
-        if cell is None:
-            return True
+        return False
 
     # ----------------------------------------------------------------------
     def get_available_tool(self, tool_type):
@@ -215,7 +246,7 @@ class Kitchen:
         self.clock.tick(10)  # 10 FPS pour bien voir les déplacements
 
     def spawn_dish_image(self, recipe_name, position):
-        """Affiche le plat sur la table d’assemblage"""
+        """Affiche le plat sur la table d'assemblage"""
         from recipes import recipes
         import os
 
@@ -226,7 +257,7 @@ class Kitchen:
         try:
             image_path = os.path.join(os.path.dirname(__file__), recipe_data["image"])
             self.current_dish_image = pygame.image.load(image_path)
-            self.current_dish_image = pygame.transform.scale(self.current_dish_image, (60, 60))
+            self.current_dish_image = pygame.transform.scale(self.current_dish_image, (40, 40))
             self.current_dish_pos = list(position)
             print(f"🍔 Image du plat {recipe_name} affichée sur la table !")
         except Exception as e:

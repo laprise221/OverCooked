@@ -71,7 +71,7 @@ class Agent:
             return
 
         if not self.task_queue and not self.current_task:
-            self.current_action = "Terminé!"
+            self.current_action = "En attente"
             return
 
         if not self.current_task and self.task_queue:
@@ -101,6 +101,39 @@ class Agent:
         return False
 
     # ----------------------------------------------------------------------
+    def _get_adjacent_positions(self, position):
+        """Retourne les 8 positions adjacentes à une position donnée"""
+        x, y = position
+        adjacent = []
+        for dx in [-1, 0, 1]:
+            for dy in [-1, 0, 1]:
+                if dx == 0 and dy == 0:
+                    continue
+                adjacent.append((x + dx, y + dy))
+        return adjacent
+
+    # ----------------------------------------------------------------------
+    def _is_adjacent_to(self, pos1, pos2):
+        """Vérifie si deux positions sont adjacentes (8 directions)"""
+        return abs(pos1[0] - pos2[0]) <= 1 and abs(pos1[1] - pos2[1]) <= 1 and pos1 != pos2
+
+    # ----------------------------------------------------------------------
+    def _find_nearest_accessible_position(self, target_position):
+        """Trouve la case accessible la plus proche d'une position cible"""
+        adjacent_positions = self._get_adjacent_positions(target_position)
+
+        # Filtre les positions accessibles
+        accessible = [pos for pos in adjacent_positions if self.kitchen.is_walkable(pos)]
+
+        if not accessible:
+            return None
+
+        # Retourne la position la plus proche de l'agent
+        current_pos = tuple(self.position)
+        closest = min(accessible, key=lambda pos: abs(pos[0] - current_pos[0]) + abs(pos[1] - current_pos[1]))
+        return closest
+
+    # ----------------------------------------------------------------------
     def _do_pickup(self, ingredient_name):
         if self.holding:
             return True
@@ -111,15 +144,27 @@ class Agent:
             print(f"❌ Ingrédient {ingredient_name} non trouvé!")
             return True
 
-        if self.position != list(target_ingredient.position):
-            self._move_towards(target_ingredient.position)
+        # Vérifie si on est déjà adjacent à l'ingrédient
+        if self._is_adjacent_to(tuple(self.position), tuple(target_ingredient.position)):
+            print(f"✅ Ramassé: {ingredient_name}")
+            self.holding = Ingredient(ingredient_name, "cru")
+            self.current_action = f"Porte {ingredient_name}"
+            return True
+
+        # Trouve une position accessible adjacent à l'ingrédient
+        target_pos = self._find_nearest_accessible_position(target_ingredient.position)
+
+        if not target_pos:
+            print(f"❌ Impossible d'accéder à {ingredient_name}!")
+            return True
+
+        # Se déplace vers cette position
+        if tuple(self.position) != target_pos:
+            self._move_towards(target_pos)
             self.current_action = f"Va chercher {ingredient_name}"
             return False
 
-        print(f"✅ Ramassé: {ingredient_name}")
-        self.holding = Ingredient(ingredient_name, "cru")
-        self.current_action = f"Porte {ingredient_name}"
-        return True
+        return False
 
     # ----------------------------------------------------------------------
     def _do_cut(self):
@@ -172,7 +217,7 @@ class Agent:
         if not self.holding:
             return True
 
-        target_pos = (4, 4)
+        target_pos = (8, 8)  # Centre de la nouvelle grille 16x16
         if self.position != list(target_pos):
             self._move_towards(target_pos)
             self.current_action = "Va vers table"
@@ -193,11 +238,11 @@ class Agent:
         if not self.holding or not isinstance(self.holding, Dish):
             self.holding = Dish(recipe_name, self.assembled_ingredients)
             self.current_action = f"Assemble {recipe_name}"
-            self.kitchen.spawn_dish_image(recipe_name, position=(4, 4))
+            self.kitchen.spawn_dish_image(recipe_name, position=(8, 8))
             self.action_timer = 15
             return False
 
-        target_pos = (2, 6)
+        target_pos = (2, 12)  # Position de livraison ajustée
         if self.position != list(target_pos):
             self._move_towards(target_pos)
             self.kitchen.move_dish_image(self.position)
