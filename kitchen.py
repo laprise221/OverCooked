@@ -17,7 +17,7 @@ class Kitchen:
 
         # Initialisation Pygame
         pygame.init()
-        self.screen = pygame.display.set_mode((width * cell_size, height * cell_size + 150))
+        self.screen = pygame.display.set_mode((width * cell_size, height * cell_size + 200))
         pygame.display.set_caption("Overcooked - Agent Autonome")
         self.clock = pygame.time.Clock()
         self.font = pygame.font.Font(None, 28)
@@ -67,17 +67,13 @@ class Kitchen:
             self.tools.append(tool)
             self.grid[pos[1]][pos[0]] = tool
 
-        # Table centrale (assemblage) - plus grande
-        self.stations['assembly'] = Station('assembly', (7, 7), (3, 3))
-        for y in range(7, 10):
-            for x in range(7, 10):
-                self.grid[y][x] = 'assembly_table'
+        # Table centrale (assemblage) - UNE SEULE CASE
+        self.stations['assembly'] = Station('assembly', (8, 8), (1, 1))
+        self.grid[8][8] = 'assembly_table'
 
-        # Comptoir (livraison) - en bas
-        self.stations['counter'] = Station('counter', (1, 12), (5, 2))
-        for y in range(12, 14):
-            for x in range(1, 6):
-                self.grid[y][x] = 'counter'
+        # Comptoir (livraison) - UNE SEULE CASE
+        self.stations['counter'] = Station('counter', (3, 12), (1, 1))
+        self.grid[12][3] = 'counter'
 
     # ----------------------------------------------------------------------
     def _load_images(self):
@@ -98,7 +94,7 @@ class Kitchen:
                 return None
 
         # Ingrédients crus
-        for name in ["salade", "tomate", "oignon", "viande","pain", "fromage", "pate"]:
+        for name in ["salade", "tomate", "oignon", "viande", "pain", "fromage", "pate"]:
             self.images[f"{name}_crue"] = load(f"{name}_crue.png")
 
         # Ingrédients transformés
@@ -118,7 +114,7 @@ class Kitchen:
         self.colors["agent"] = (0, 100, 255)
 
     # ----------------------------------------------------------------------
-    def draw(self, agent, current_order=None, score=0):
+    def draw(self, agent, current_order=None, score=0, show_buttons=False):
         """Dessine toute la cuisine"""
         self.screen.fill((240, 240, 220))
 
@@ -144,16 +140,60 @@ class Kitchen:
                     else:
                         pygame.draw.rect(self.screen, (150, 150, 150), rect)
                 elif isinstance(cell, str):
-                    color = self.colors.get(cell, (200, 200, 200))
-                    pygame.draw.rect(self.screen, color, rect)
+                    # Affiche l'image de la table ou du comptoir
+                    if cell == "assembly_table":
+                        img = self.images.get("assembly_table")
+                        if img:
+                            self.screen.blit(img, (x * self.cell_size + 5, y * self.cell_size + 5))
+                        else:
+                            pygame.draw.rect(self.screen, (139, 90, 43), rect)
+                    elif cell == "counter":
+                        img = self.images.get("counter")
+                        if img:
+                            self.screen.blit(img, (x * self.cell_size + 5, y * self.cell_size + 5))
+                        else:
+                            pygame.draw.rect(self.screen, (180, 180, 160), rect)
+                    else:
+                        color = self.colors.get(cell, (200, 200, 200))
+                        pygame.draw.rect(self.screen, color, rect)
 
                 pygame.draw.rect(self.screen, (200, 200, 200), rect, 1)
+
+        # Dessine les ingrédients assemblés sur la table (AVANT le plat)
+        if not (self.current_dish_image and self.current_dish_pos):
+            # N'affiche les ingrédients QUE si le plat n'est pas encore créé
+            for ingredient in agent.assembled_ingredients:
+                if ingredient.position:
+                    ix, iy = ingredient.position
+                    key = f"{ingredient.name}_{ingredient.state}" if ingredient.state != "cru" else f"{ingredient.name}_crue"
+                    img = self.images.get(key)
+                    if img:
+                        # Réduit l'image pour les ingrédients sur la table
+                        small_img = pygame.transform.scale(img, (25, 25))
+                        # Décale légèrement pour éviter la superposition
+                        idx = agent.assembled_ingredients.index(ingredient)
+                        offset_x = (idx * 10) % 30
+                        offset_y = (idx * 10) // 30 * 10
+                        self.screen.blit(small_img,
+                                         (ix * self.cell_size + 10 + offset_x, iy * self.cell_size + 10 + offset_y))
 
         # Agent
         ax, ay = agent.position
         agent_rect = pygame.Rect(ax * self.cell_size + 5, ay * self.cell_size + 5,
                                  self.cell_size - 10, self.cell_size - 10)
         pygame.draw.circle(self.screen, self.colors['agent'], agent_rect.center, self.cell_size // 4)
+
+        # Dessine l'ingrédient porté par l'agent (si c'est un simple ingrédient)
+        if agent.holding and isinstance(agent.holding, Ingredient):
+            key = f"{agent.holding.name}_{agent.holding.state}" if agent.holding.state != "cru" else f"{agent.holding.name}_crue"
+            ing_img = self.images.get(key)
+            if ing_img:
+                # Réduit l'image pour qu'elle soit plus petite
+                small_img = pygame.transform.scale(ing_img, (30, 30))
+                # Position au-dessus de l'agent
+                img_x = ax * self.cell_size + self.cell_size // 2 - 15
+                img_y = ay * self.cell_size + 5
+                self.screen.blit(small_img, (img_x, img_y))
 
         # Interface en bas
         font = self.font
@@ -184,12 +224,20 @@ class Kitchen:
             rect_y = y * self.cell_size + self.cell_size // 4
             self.screen.blit(self.current_dish_image, (rect_x, rect_y))
 
+        # Ne dessine les boutons que si demandé
+        if show_buttons:
+            return self._draw_recipe_buttons_internal()
+
         pygame.display.flip()
+        return []
 
     # ----------------------------------------------------------------------
-    def draw_recipe_buttons(self, recipes_list):
-        """Dessine les boutons de sélection de recettes"""
-        button_y = self.height * self.cell_size + 120
+    def _draw_recipe_buttons_internal(self):
+        """Dessine les boutons de sélection de recettes (interne)"""
+        from recipes import get_all_recipe_names
+        recipes_list = get_all_recipe_names()
+
+        button_y = self.height * self.cell_size + 130
         button_width = 150
         button_height = 40
         button_spacing = 20
@@ -225,8 +273,9 @@ class Kitchen:
             return True
         if isinstance(cell, str) and cell in ("assembly_table", "counter"):
             return True
-        if hasattr(cell, "occupied") and not cell.occupied:
-            return True
+        # Les outils et ingrédients ne sont PAS marchables
+        if isinstance(cell, (Tool, Ingredient)):
+            return False
         return False
 
     # ----------------------------------------------------------------------

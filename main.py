@@ -96,12 +96,13 @@ class OvercookedGame:
                     self.current_order = None
                     self.awaiting_recipe_choice = True
 
-            # Affiche la cuisine
-            self.kitchen.draw(self.agent, self.current_order, self.score)
-
-            # Affiche les boutons si en attente de choix
-            if self.awaiting_recipe_choice:
-                self.recipe_buttons = self.kitchen.draw_recipe_buttons(all_recipes)
+            # Affiche la cuisine avec ou sans boutons
+            self.recipe_buttons = self.kitchen.draw(
+                self.agent,
+                self.current_order,
+                self.score,
+                show_buttons=self.awaiting_recipe_choice
+            )
 
             self.kitchen.update()
 

@@ -176,17 +176,24 @@ class Agent:
             self.current_action = "Attente planche"
             return False
 
-        if self.position != list(cutting_board.position):
-            self._move_towards(cutting_board.position)
-            self.current_action = "Va vers planche"
+        # Vérifie si on est adjacent à la planche
+        if self._is_adjacent_to(tuple(self.position), tuple(cutting_board.position)):
+            if cutting_board.use(self.holding):
+                self.action_timer = 20
+                self.holding = cutting_board.release()
+                self.holding.state = "coupe"
+                self.current_action = f"Découpe {self.holding.name}"
+                return True
             return False
 
-        if cutting_board.use(self.holding):
-            self.action_timer = 20
-            self.holding = cutting_board.release()
-            self.holding.state = "coupe"
-            self.current_action = f"Découpe {self.holding.name}"
+        # Trouve une position adjacente à la planche
+        target_pos = self._find_nearest_accessible_position(cutting_board.position)
+        if not target_pos:
+            print("❌ Impossible d'accéder à la planche!")
             return True
+
+        self._move_towards(target_pos)
+        self.current_action = "Va vers planche"
         return False
 
     # ----------------------------------------------------------------------
@@ -199,17 +206,24 @@ class Agent:
             self.current_action = "Attente poêle"
             return False
 
-        if self.position != list(stove.position):
-            self._move_towards(stove.position)
-            self.current_action = "Va vers poêle"
+        # Vérifie si on est adjacent à la poêle
+        if self._is_adjacent_to(tuple(self.position), tuple(stove.position)):
+            if stove.use(self.holding):
+                self.action_timer = 30
+                self.holding = stove.release()
+                self.holding.state = "cuit"
+                self.current_action = f"Cuit {self.holding.name}"
+                return True
             return False
 
-        if stove.use(self.holding):
-            self.action_timer = 30
-            self.holding = stove.release()
-            self.holding.state = "cuit"
-            self.current_action = f"Cuit {self.holding.name}"
+        # Trouve une position adjacente à la poêle
+        target_pos = self._find_nearest_accessible_position(stove.position)
+        if not target_pos:
+            print("❌ Impossible d'accéder à la poêle!")
             return True
+
+        self._move_towards(target_pos)
+        self.current_action = "Va vers poêle"
         return False
 
     # ----------------------------------------------------------------------
@@ -217,16 +231,27 @@ class Agent:
         if not self.holding:
             return True
 
-        target_pos = (8, 8)  # Centre de la nouvelle grille 16x16
-        if self.position != list(target_pos):
-            self._move_towards(target_pos)
-            self.current_action = "Va vers table"
-            return False
+        # Position centrale de la table d'assemblage
+        assembly_center = (8, 8)
 
-        self.assembled_ingredients.append(self.holding)
-        self.holding = None
-        self.current_action = "Dépose ingrédient"
-        return True
+        # Vérifie si on est adjacent à la table
+        if self._is_adjacent_to(tuple(self.position), assembly_center):
+            # Dépose l'ingrédient sur la table avec sa position
+            self.holding.position = list(assembly_center)
+            self.assembled_ingredients.append(self.holding)
+            self.holding = None
+            self.current_action = "Dépose ingrédient"
+            return True
+
+        # Trouve une position adjacente à la table
+        target_pos = self._find_nearest_accessible_position(assembly_center)
+        if not target_pos:
+            print("❌ Impossible d'accéder à la table!")
+            return True
+
+        self._move_towards(target_pos)
+        self.current_action = "Va vers table"
+        return False
 
     # ----------------------------------------------------------------------
     def _do_deliver(self, recipe_name, required_ingredients):
@@ -242,18 +267,27 @@ class Agent:
             self.action_timer = 15
             return False
 
-        target_pos = (2, 12)  # Position de livraison ajustée
-        if self.position != list(target_pos):
-            self._move_towards(target_pos)
-            self.kitchen.move_dish_image(self.position)
-            self.current_action = "Va livrer le plat"
-            return False
+        # Position centrale du comptoir
+        counter_center = (3, 12)
 
-        self.holding = None
-        self.assembled_ingredients = []
-        self.current_action = f"Livré {recipe_name} !"
-        self.kitchen.remove_dish_image()
-        return True
+        # Vérifie si on est adjacent au comptoir
+        if self._is_adjacent_to(tuple(self.position), counter_center):
+            self.holding = None
+            self.assembled_ingredients = []
+            self.current_action = f"Livré {recipe_name} !"
+            self.kitchen.remove_dish_image()
+            return True
+
+        # Trouve une position adjacente au comptoir
+        target_pos = self._find_nearest_accessible_position(counter_center)
+        if not target_pos:
+            print("❌ Impossible d'accéder au comptoir!")
+            return True
+
+        self._move_towards(target_pos)
+        self.kitchen.move_dish_image(self.position)
+        self.current_action = "Va livrer le plat"
+        return False
 
     # ----------------------------------------------------------------------
     def _move_towards(self, target):
