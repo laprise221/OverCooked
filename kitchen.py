@@ -14,6 +14,7 @@ class Kitchen:
         self.grid = [[None for _ in range(width)] for _ in range(height)]
         self.current_dish_image = None
         self.current_dish_pos = None
+        self.counter_dishes = []  # Liste des plats sur le comptoir
 
         # Initialisation Pygame
         pygame.init()
@@ -115,6 +116,10 @@ class Kitchen:
         self.images["agent_CF"] = load("agent_CF.png")  # Face
         self.images["agent_CG"] = load("agent_CG.png")  # Gauche
 
+        # Images des plats finaux
+        for recipe_name in ["burger", "sandwich", "pizza"]:
+            self.images[f"dish_{recipe_name}"] = load(f"{recipe_name}.png")
+
         # Couleurs de base
         self.colors["floor"] = (240, 240, 220)
         self.colors["agent"] = (0, 100, 255)
@@ -183,6 +188,15 @@ class Kitchen:
                         self.screen.blit(small_img,
                                          (ix * self.cell_size + 10 + offset_x, iy * self.cell_size + 10 + offset_y))
 
+        # Dessine les plats sur le comptoir
+        for dish_data in self.counter_dishes:
+            dish_img = dish_data['image']
+            dx, dy = dish_data['position']
+            offset = dish_data.get('offset', 0)
+            rect_x = dx * self.cell_size + 5 + offset
+            rect_y = dy * self.cell_size + 5
+            self.screen.blit(dish_img, (rect_x, rect_y))
+
         # Agent - Utilise l'image selon la direction
         ax, ay = agent.position
         agent_img_key = f"agent_{agent.direction}"
@@ -209,6 +223,13 @@ class Kitchen:
                 img_y = ay * self.cell_size + 5
                 self.screen.blit(small_img, (img_x, img_y))
 
+        # Dessine le plat si l'agent le transporte
+        if self.current_dish_image and self.current_dish_pos:
+            x, y = self.current_dish_pos
+            rect_x = x * self.cell_size + self.cell_size // 4
+            rect_y = y * self.cell_size + self.cell_size // 4
+            self.screen.blit(self.current_dish_image, (rect_x, rect_y))
+
         # Interface en bas
         font = self.font
         ui_y = self.height * self.cell_size
@@ -230,13 +251,6 @@ class Kitchen:
         instructions_text = self.small_font.render("Cliquez sur un bouton pour choisir une recette | Q = Quitter", True,
                                                    (0, 0, 0))
         self.screen.blit(instructions_text, (10, ui_y + 100))
-
-        # Dessine le plat si présent
-        if self.current_dish_image and self.current_dish_pos:
-            x, y = self.current_dish_pos
-            rect_x = x * self.cell_size + self.cell_size // 4
-            rect_y = y * self.cell_size + self.cell_size // 4
-            self.screen.blit(self.current_dish_image, (rect_x, rect_y))
 
         # Ne dessine les boutons que si demandé
         if show_buttons:
@@ -319,13 +333,13 @@ class Kitchen:
             self.current_dish_image = pygame.image.load(image_path)
             self.current_dish_image = pygame.transform.scale(self.current_dish_image, (40, 40))
             self.current_dish_pos = list(position)
-            print(f"🍔 Image du plat {recipe_name} affichée sur la table !")
+            print(f"🍕 Image du plat {recipe_name} affichée sur la table !")
         except Exception as e:
             print(f"⚠️ Erreur chargement plat {recipe_name}: {e}")
 
     def remove_dish_image(self):
         """Supprime l'image du plat (après livraison)"""
-        print("🧺 Plat retiré du comptoir")
+        print("🧺 Plat retiré")
         self.current_dish_image = None
         self.current_dish_pos = None
 
@@ -333,3 +347,40 @@ class Kitchen:
         """Déplace visuellement le plat si présent"""
         if self.current_dish_image and self.current_dish_pos:
             self.current_dish_pos = list(new_position)
+
+    def place_dish_on_counter(self, recipe_name, position):
+        """Place un plat fini sur le comptoir"""
+        dish_img = self.images.get(f"dish_{recipe_name}")
+        if not dish_img:
+            # Essaie de charger l'image si pas encore chargée
+            from recipes import recipes
+            import os
+            recipe_data = recipes.get(recipe_name)
+            if recipe_data and "image" in recipe_data:
+                try:
+                    image_path = os.path.join(os.path.dirname(__file__), recipe_data["image"])
+                    dish_img = pygame.image.load(image_path)
+                    dish_img = pygame.transform.scale(dish_img, (35, 35))
+                    self.images[f"dish_{recipe_name}"] = dish_img
+                except Exception as e:
+                    print(f"⚠️ Erreur chargement image plat: {e}")
+                    return
+
+        # Calcule l'offset pour éviter la superposition
+        offset = len(self.counter_dishes) * 15
+
+        self.counter_dishes.append({
+            'name': recipe_name,
+            'image': dish_img,
+            'position': position,
+            'offset': offset
+        })
+
+        # Supprime l'image du plat en transit
+        self.remove_dish_image()
+        print(f"✅ {recipe_name} posé sur le comptoir!")
+
+    def clear_counter(self):
+        """Nettoie tous les plats du comptoir"""
+        self.counter_dishes = []
+        print("🧹 Comptoir nettoyé!")

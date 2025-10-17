@@ -274,10 +274,11 @@ class Agent:
 
         # Vérifie si on est adjacent au comptoir
         if self._is_adjacent_to(tuple(self.position), counter_center):
+            # MODIFICATION: Dépose le plat sur le comptoir avec son image
+            self.kitchen.place_dish_on_counter(recipe_name, counter_center)
             self.holding = None
             self.assembled_ingredients = []
             self.current_action = f"Livré {recipe_name} !"
-            self.kitchen.remove_dish_image()
             return True
 
         # Trouve une position adjacente au comptoir
