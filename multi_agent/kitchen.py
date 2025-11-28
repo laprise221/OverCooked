@@ -393,9 +393,6 @@ class Kitchen(KitchenBase):
         sc = self.font.render(f"Score: {score}", True, SCORE_GREEN)
         self.screen.blit(sc, (15, ui_y + 15))
 
-        ord_t = f"Commande: {current_order}" if current_order else "En attente..."
-        self.screen.blit(self.font.render(ord_t, True, (30, 60, 160)), (300, ui_y + 15))
-
         # Commande actuelle (à droite de Score)
         if current_order:
             if isinstance(current_order, str):
@@ -417,7 +414,6 @@ class Kitchen(KitchenBase):
                 self.screen.blit(txt, (10, action_y + idx * 20))
 
         # IMPORTANT : plus de show_buttons ici, plus de flip ici
-        return []
         return []
 
 
