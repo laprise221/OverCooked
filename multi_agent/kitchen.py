@@ -396,12 +396,29 @@ class Kitchen(KitchenBase):
         ord_t = f"Commande: {current_order}" if current_order else "En attente..."
         self.screen.blit(self.font.render(ord_t, True, (30, 60, 160)), (300, ui_y + 15))
 
-        if agents:
-            for idx, ag in enumerate(agents):
-                col, row = idx % 2, idx // 2
-                st = self.small_font.render(f"A{idx + 1}: {getattr(ag, 'current_action', 'Idle')}", True, TEXT_MAIN)
-                self.screen.blit(st, (15 + col * 300, ui_y + 50 + row * 25))
+        # Commande actuelle (à droite de Score)
+        if current_order:
+            if isinstance(current_order, str):
+                order_text = current_order
+            else:
+                order_text = f"Commande: {current_order}"
+            text_order = self.font.render(order_text, True, (30, 60, 160))
+            self.screen.blit(text_order, (350, ui_y + 10))
 
-        if show_buttons and hasattr(self, "_draw_recipe_buttons_internal"):
-            return self._draw_recipe_buttons_internal()
+        # Actions des agents (juste en dessous)
+        if agents:
+            action_y = ui_y + 40   # 2e ligne
+            for idx, agent in enumerate(agents):
+                txt = self.small_font.render(
+                    f"Agent {idx + 1}: {getattr(agent, 'current_action', 'En attente')}",
+                    True,
+                    TEXT_MAIN,
+                )
+                self.screen.blit(txt, (10, action_y + idx * 20))
+
+        # IMPORTANT : plus de show_buttons ici, plus de flip ici
         return []
+        return []
+
+
+

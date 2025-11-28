@@ -249,10 +249,19 @@ class MultiAgentOvercookedGame:
         return False
 
     def draw_game(self):
-        txt = f"{len(self.pending_orders)} choix" if self.awaiting_recipe_choice else f"{self.current_order}"
+        """Dessine tout le jeu"""
+        if self.awaiting_recipe_choice:
+            current_display = f"{len(self.pending_orders)} plat(s) sélectionné(s)"
+        else:
+            current_display = f"{self.current_order} ({len(self.order_queue)} en attente)"
 
-        # Appel du dessin kitchen (SANS FLIP)
-        self.kitchen.draw(self.agents, txt, self.score, self.awaiting_recipe_choice)
+        # Dessine la cuisine avec tous les agents
+        _ = self.kitchen.draw(
+            agents=self.agents,
+            current_order=current_display,
+            score=self.score,
+            show_buttons=False   # <-- IMPORTANT : toujours False ici
+        )
 
         if self.awaiting_recipe_choice:
             self.recipe_buttons, self.send_button, self.clear_button = self._draw_order_interface()
@@ -260,31 +269,59 @@ class MultiAgentOvercookedGame:
         # LE SEUL ET UNIQUE FLIP DE LA BOUCLE DE JEU
         pygame.display.flip()
 
+
     def _draw_order_interface(self):
-        # ... (Identique à avant, juste pour le visuel des boutons) ...
-        ui_y = self.kitchen.height * self.kitchen.cell_size + 130
-        buttons = []
-        names = get_all_recipe_names()
+        """Dessine l'interface de sélection des commandes"""
+        recipes_list = get_all_recipe_names()
 
-        for i, name in enumerate(names):
-            r = pygame.Rect(10 + i*170, ui_y, 150, 40)
-            col = (100, 150, 255) if name not in self.pending_orders else (50, 200, 50)
-            pygame.draw.rect(self.kitchen.screen, col, r, border_radius=5)
-            txt = self.kitchen.small_font.render(name.capitalize(), True, (255,255,255))
-            self.kitchen.screen.blit(txt, txt.get_rect(center=r.center))
-            buttons.append((r, name))
+        # haut du panneau bas
+        ui_top = self.kitchen.height * self.kitchen.cell_size  # 800
 
-        bsend = pygame.Rect(10, ui_y + 50, 150, 40)
-        pygame.draw.rect(self.kitchen.screen, (50, 200, 50), bsend, border_radius=5)
-        t1 = self.kitchen.small_font.render("Envoyer", True, (255,255,255))
-        self.kitchen.screen.blit(t1, t1.get_rect(center=bsend.center))
+        # --- Boutons de recettes ---
+        button_width = 150
+        button_height = 40
+        button_spacing = 20
+        recipe_buttons = []
 
-        bclear = pygame.Rect(180, ui_y + 50, 150, 40)
-        pygame.draw.rect(self.kitchen.screen, (200, 50, 50), bclear, border_radius=5)
-        t2 = self.kitchen.small_font.render("Effacer", True, (255,255,255))
-        self.kitchen.screen.blit(t2, t2.get_rect(center=bclear.center))
+        # on les place vers le milieu du panneau bas
+        recipes_y = ui_top + 80   # 880 → 920
 
-        return buttons, bsend, bclear
+        for i, recipe_name in enumerate(recipes_list):
+            button_x = 10 + i * (button_width + button_spacing)
+            button_rect = pygame.Rect(button_x, recipes_y, button_width, button_height)
+
+            # Couleur : vert si sélectionné, bleu sinon
+            color = (50, 200, 50) if recipe_name in self.pending_orders else (100, 150, 255)
+
+            pygame.draw.rect(self.kitchen.screen, color, button_rect)
+            pygame.draw.rect(self.kitchen.screen, (0, 0, 0), button_rect, 2)
+
+            button_text = self.kitchen.small_font.render(recipe_name.capitalize(), True, (255, 255, 255))
+            text_rect = button_text.get_rect(center=button_rect.center)
+            self.kitchen.screen.blit(button_text, text_rect)
+
+            recipe_buttons.append((button_rect, recipe_name))
+
+        # --- Bouton "Envoyer" ---
+        send_y = ui_top + 130  # 930 → 970, bien visible
+        send_button_rect = pygame.Rect(10, send_y, 150, 40)
+        send_color = (50, 200, 50) if self.pending_orders else (150, 150, 150)
+        pygame.draw.rect(self.kitchen.screen, send_color, send_button_rect)
+        pygame.draw.rect(self.kitchen.screen, (0, 0, 0), send_button_rect, 2)
+        send_text = self.kitchen.small_font.render("Envoyer", True, (255, 255, 255))
+        send_text_rect = send_text.get_rect(center=send_button_rect.center)
+        self.kitchen.screen.blit(send_text, send_text_rect)
+
+        # --- Bouton "Effacer" ---
+        clear_button_rect = pygame.Rect(180, send_y, 150, 40)
+        pygame.draw.rect(self.kitchen.screen, (200, 50, 50), clear_button_rect)
+        pygame.draw.rect(self.kitchen.screen, (0, 0, 0), clear_button_rect, 2)
+        clear_text = self.kitchen.small_font.render("Effacer", True, (255, 255, 255))
+        clear_text_rect = clear_text.get_rect(center=clear_button_rect.center)
+        self.kitchen.screen.blit(clear_text, clear_text_rect)
+
+        return recipe_buttons, send_button_rect, clear_button_rect
+
 
     def run(self):
         clock = pygame.time.Clock()
