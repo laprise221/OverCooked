@@ -4,8 +4,14 @@ Définit le comportement de l'agent autonome avec recherche de chemin A*
 """
 
 import heapq
-from objects import Ingredient, Dish
-from recipes import parse_ingredient_requirement, get_ingredient_config
+import sys
+import os
+
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from common.objects import Ingredient, Dish
+from common.recipes import parse_ingredient_requirement, get_ingredient_config
 
 class Agent:
     """
@@ -274,10 +280,11 @@ class Agent:
 
         # Vérifie si on est adjacent au comptoir
         if self._is_adjacent_to(tuple(self.position), counter_center):
+            # MODIFICATION: Dépose le plat sur le comptoir avec son image
+            self.kitchen.place_dish_on_counter(recipe_name, counter_center)
             self.holding = None
             self.assembled_ingredients = []
             self.current_action = f"Livré {recipe_name} !"
-            self.kitchen.remove_dish_image()
             return True
 
         # Trouve une position adjacente au comptoir

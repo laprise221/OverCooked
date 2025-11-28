@@ -28,12 +28,12 @@ class Ingredient:
 
     def cut(self):
         """Change l'état de l'ingrédient en 'coupe'."""
-        if self.state == "crue":
+        if self.state in ["crue", "cru", "raw"]:
             self.state = "coupe"
 
     def cook(self):
         """Change l'état de l'ingrédient en 'cuit'."""
-        if self.state in ["crue", "coupe"]:
+        if self.state in ["crue", "cru", "raw", "coupe", "cut"]:
             self.state = "cuit"
 
     def get_full_name(self):

@@ -13,7 +13,7 @@ recipes = {
             "viande_cuit",
             "pain"
         ],
-        "image": "images/burger.png",
+        "image": "images/dishes/burger.png",
         "description": "Un délicieux burger avec salade, tomate, oignon, viande cuite et pain"
     },
 
@@ -23,7 +23,7 @@ recipes = {
             "fromage",
             "tomate_coupe"
         ],
-        "image": "images/sandwich.png",
+        "image": "images/dishes/sandwich.png",
         "description": "Un sandwich simple au fromage et tomate"
     },
     "pizza": {
@@ -33,7 +33,7 @@ recipes = {
             "tomate_coupe",
             "oignon_coupe"
         ],
-        "image": "images/pizza.png",
+        "image": "images/dishes/pizza.png",
         "description": "Une pizza savoureuse avec pâte, fromage, tomate et oignon"
     }
 }
