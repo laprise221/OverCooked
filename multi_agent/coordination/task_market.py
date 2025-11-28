@@ -84,10 +84,13 @@ class TaskMarket:
         self.world_state = world_state
         self.tasks: Dict[int, Task] = {}
         self.completed_tasks: Set[int] = set()
-        self.resource_locks: Dict[str, Optional[int]] = {
-            'cutting_board': None,
-            'stove': None,
-            'assembly': None
+        # Capacité par ressource (nombre d'instances)
+        self.resource_capacity: Dict[str, int] = world_state.station_capacity or {}
+        # Locks: ensemble des agents tenant la ressource
+        self.resource_locks: Dict[str, Set[int]] = {
+            'cutting_board': set(),
+            'stove': set(),
+            'assembly': set()
         }
 
     def add_tasks(self, tasks: List[Dict[str, any]]):
@@ -119,18 +122,20 @@ class TaskMarket:
                 # Vérifier si les ressources nécessaires sont disponibles
                 if self._check_resource_availability(task):
                     available.append(task)
-                else:
-                    task.status = TaskStatus.BLOCKED
         return available
 
     def _check_resource_availability(self, task: Task) -> bool:
         """Vérifie si les ressources nécessaires pour une tâche sont disponibles"""
+        capacity = self.resource_capacity or {}
         if task.action_type == ActionType.CUT:
-            return self.resource_locks['cutting_board'] is None
+            limit = capacity.get('cutting_board', 1)
+            return len(self.resource_locks['cutting_board']) < limit
         elif task.action_type == ActionType.COOK:
-            return self.resource_locks['stove'] is None
+            limit = capacity.get('stove', 1)
+            return len(self.resource_locks['stove']) < limit
         elif task.action_type in [ActionType.BRING_TO_ASSEMBLY, ActionType.DELIVER]:
-            return self.resource_locks['assembly'] is None
+            limit = capacity.get('assembly', 1)
+            return len(self.resource_locks['assembly']) < limit
         return True  # PICKUP et WAIT n'ont pas besoin de ressources spécifiques
 
     def submit_bid(self, agent_id: int, task_id: int, cost: float) -> Bid:
@@ -194,21 +199,21 @@ class TaskMarket:
         """Réserve une ressource pour un agent"""
         task = self.tasks[task_id]
         if task.action_type == ActionType.CUT:
-            self.resource_locks['cutting_board'] = agent_id
+            self.resource_locks['cutting_board'].add(agent_id)
         elif task.action_type == ActionType.COOK:
-            self.resource_locks['stove'] = agent_id
+            self.resource_locks['stove'].add(agent_id)
         elif task.action_type in [ActionType.BRING_TO_ASSEMBLY, ActionType.DELIVER]:
-            self.resource_locks['assembly'] = agent_id
+            self.resource_locks['assembly'].add(agent_id)
 
     def _unlock_resource(self, task_id: int):
         """Libère une ressource après utilisation"""
         task = self.tasks[task_id]
         if task.action_type == ActionType.CUT:
-            self.resource_locks['cutting_board'] = None
+            self.resource_locks['cutting_board'].discard(task.assigned_agent)
         elif task.action_type == ActionType.COOK:
-            self.resource_locks['stove'] = None
+            self.resource_locks['stove'].discard(task.assigned_agent)
         elif task.action_type in [ActionType.BRING_TO_ASSEMBLY, ActionType.DELIVER]:
-            self.resource_locks['assembly'] = None
+            self.resource_locks['assembly'].discard(task.assigned_agent)
 
     def start_task(self, task_id: int):
         """Marque une tâche comme commencée"""

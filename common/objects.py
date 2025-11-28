@@ -67,9 +67,10 @@ class Tool:
         self.occupied = True
         self.current_item = ingredient
 
-        if self.tool_type == "planche":
+        # Support des alias anglais utilisés par le mode multi-agent
+        if self.tool_type in ("planche", "cutting_board"):
             ingredient.cut()
-        elif self.tool_type == "poele":
+        elif self.tool_type in ("poele", "stove"):
             ingredient.cook()
 
         print(f"✅ {ingredient.name} est maintenant {ingredient.state}")

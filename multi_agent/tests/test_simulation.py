@@ -5,14 +5,18 @@ import os
 
 # Désactiver pygame display
 os.environ['SDL_VIDEODRIVER'] = 'dummy'
+os.environ.setdefault('SDL_AUDIODRIVER', 'dummy')
 
-from kitchen import Kitchen
-from multi_agent import CooperativeAgent
-from recipes import recipes
-from strips import STRIPSPlanner, create_initial_world_state
-from task_market import TaskMarket
-from communication import Blackboard, AgentCommunicator
-from metrics import PerformanceMetrics
+# Ajouter la racine du projet pour les imports absolus
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+from multi_agent.kitchen import Kitchen
+from multi_agent.agent import CooperativeAgent
+from common.recipes import recipes
+from multi_agent.planning.strips import STRIPSPlanner, create_initial_world_state
+from multi_agent.coordination.task_market import TaskMarket
+from multi_agent.coordination.communication import Blackboard, AgentCommunicator
+from multi_agent.analytics.metrics import PerformanceMetrics
 
 def simulate_order(recipe_name, max_iterations=1500):
     """Simule complètement une commande"""

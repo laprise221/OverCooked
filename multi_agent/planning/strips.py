@@ -54,6 +54,9 @@ class WorldState:
     # Commandes complétées
     completed_orders: List[str] = field(default_factory=list)
 
+    # Capacité des stations (nombre d'instances disponibles)
+    station_capacity: Dict[str, int] = field(default_factory=dict)
+
     def copy(self) -> 'WorldState':
         """Crée une copie profonde de l'état"""
         return WorldState(
@@ -63,7 +66,8 @@ class WorldState:
             station_availability=self.station_availability.copy(),
             assembly_table=self.assembly_table.copy(),
             pending_orders=self.pending_orders.copy(),
-            completed_orders=self.completed_orders.copy()
+            completed_orders=self.completed_orders.copy(),
+            station_capacity=self.station_capacity.copy()
         )
 
     def satisfies(self, conditions: Dict[str, Any]) -> bool:
@@ -400,6 +404,27 @@ def create_initial_world_state(kitchen, agents: List[Any]) -> WorldState:
     state.station_availability['stove'] = True
     state.station_availability['assembly'] = True
     state.station_availability['counter'] = True
+
+    # Capacité des stations (compte dans la grille)
+    counts = {'cutting_board': 0, 'stove': 0, 'assembly': 0, 'counter': 0}
+    from common.objects import Tool
+    for y in range(kitchen.height):
+        for x in range(kitchen.width):
+            cell = kitchen.grid[y][x]
+            if isinstance(cell, Tool):
+                if cell.tool_type in ('planche', 'cutting_board'):
+                    counts['cutting_board'] += 1
+                elif cell.tool_type in ('poele', 'stove'):
+                    counts['stove'] += 1
+            elif isinstance(cell, str):
+                if cell == 'assembly_table':
+                    counts['assembly'] += 1
+                elif cell == 'counter':
+                    counts['counter'] += 1
+
+    for k in counts:
+        counts[k] = max(1, counts[k])
+    state.station_capacity = counts
 
     # Table d'assemblage vide
     state.assembly_table = set()
