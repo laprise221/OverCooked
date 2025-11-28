@@ -288,18 +288,17 @@ class MultiAgentOvercookedGame:
 
     def draw_game(self):
         """Dessine tout le jeu"""
-        # Texte d'affichage
         if self.awaiting_recipe_choice:
             current_display = f"{len(self.pending_orders)} plat(s) sélectionné(s)"
         else:
             current_display = f"{self.current_order} ({len(self.order_queue)} en attente)"
 
         # Dessine la cuisine avec tous les agents
-        buttons = self.kitchen.draw(
+        _ = self.kitchen.draw(
             agents=self.agents,
             current_order=current_display,
             score=self.score,
-            show_buttons=self.awaiting_recipe_choice
+            show_buttons=False   # <-- IMPORTANT : toujours False ici
         )
 
         # Dessine l'interface de commandes si nécessaire
@@ -308,20 +307,26 @@ class MultiAgentOvercookedGame:
 
         pygame.display.flip()
 
+
     def _draw_order_interface(self):
         """Dessine l'interface de sélection des commandes"""
         recipes_list = get_all_recipe_names()
-        ui_y = self.kitchen.height * self.kitchen.cell_size + 130
 
-        # Boutons de recettes
+        # haut du panneau bas
+        ui_top = self.kitchen.height * self.kitchen.cell_size  # 800
+
+        # --- Boutons de recettes ---
         button_width = 150
         button_height = 40
         button_spacing = 20
         recipe_buttons = []
 
+        # on les place vers le milieu du panneau bas
+        recipes_y = ui_top + 80   # 880 → 920
+
         for i, recipe_name in enumerate(recipes_list):
             button_x = 10 + i * (button_width + button_spacing)
-            button_rect = pygame.Rect(button_x, ui_y, button_width, button_height)
+            button_rect = pygame.Rect(button_x, recipes_y, button_width, button_height)
 
             # Couleur selon si sélectionné
             color = (100, 150, 255) if recipe_name not in self.pending_orders else (50, 200, 50)
@@ -335,8 +340,9 @@ class MultiAgentOvercookedGame:
 
             recipe_buttons.append((button_rect, recipe_name))
 
-        # Bouton "Envoyer"
-        send_button_rect = pygame.Rect(10, ui_y + 60, 150, 40)
+        # --- Bouton "Envoyer" ---
+        send_y = ui_top + 130  # 930 → 970, bien visible
+        send_button_rect = pygame.Rect(10, send_y, 150, 40)
         send_color = (50, 200, 50) if self.pending_orders else (150, 150, 150)
         pygame.draw.rect(self.kitchen.screen, send_color, send_button_rect)
         pygame.draw.rect(self.kitchen.screen, (0, 0, 0), send_button_rect, 2)
@@ -344,8 +350,8 @@ class MultiAgentOvercookedGame:
         send_text_rect = send_text.get_rect(center=send_button_rect.center)
         self.kitchen.screen.blit(send_text, send_text_rect)
 
-        # Bouton "Effacer"
-        clear_button_rect = pygame.Rect(180, ui_y + 60, 150, 40)
+        # --- Bouton "Effacer" ---
+        clear_button_rect = pygame.Rect(180, send_y, 150, 40)
         pygame.draw.rect(self.kitchen.screen, (200, 50, 50), clear_button_rect)
         pygame.draw.rect(self.kitchen.screen, (0, 0, 0), clear_button_rect, 2)
         clear_text = self.kitchen.small_font.render("Effacer", True, (255, 255, 255))
@@ -353,6 +359,7 @@ class MultiAgentOvercookedGame:
         self.kitchen.screen.blit(clear_text, clear_text_rect)
 
         return recipe_buttons, send_button_rect, clear_button_rect
+
 
     def run(self):
         """Boucle principale du jeu"""

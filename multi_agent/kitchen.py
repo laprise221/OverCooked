@@ -319,18 +319,7 @@ class Kitchen(KitchenBase):
         score_text = font.render(f"Score: {score}", True, SCORE_GREEN)
         self.screen.blit(score_text, (10, ui_y + 10))
 
-        # Actions des agents
-        if agents:
-            action_y = ui_y + 45
-            for idx, agent in enumerate(agents):
-                txt = small_font.render(
-                    f"Agent {idx + 1}: {getattr(agent, 'current_action', 'En attente')}",
-                    True,
-                    TEXT_MAIN,
-                )
-                self.screen.blit(txt, (10, action_y + idx * 22))
-
-        # Commande actuelle (texte simplifié)
+        # Commande actuelle (à droite de Score)
         if current_order:
             if isinstance(current_order, str):
                 order_text = current_order
@@ -339,17 +328,19 @@ class Kitchen(KitchenBase):
             text_order = font.render(order_text, True, (30, 60, 160))
             self.screen.blit(text_order, (350, ui_y + 10))
 
-        # Instructions
-        instructions_text = small_font.render(
-            "Cliquez sur un bouton pour choisir une recette | Q = Quitter",
-            True,
-            TEXT_MUTED,
-        )
-        self.screen.blit(instructions_text, (10, ui_y + 120))
+        # Actions des agents (juste en dessous)
+        if agents:
+            action_y = ui_y + 40   # 2e ligne
+            for idx, agent in enumerate(agents):
+                txt = small_font.render(
+                    f"Agent {idx + 1}: {getattr(agent, 'current_action', 'En attente')}",
+                    True,
+                    TEXT_MAIN,
+                )
+                self.screen.blit(txt, (10, action_y + idx * 20))
 
-        # Boutons (si le parent en fournit)
-        if show_buttons and hasattr(self, "_draw_recipe_buttons_internal"):
-            return self._draw_recipe_buttons_internal()
-
-        pygame.display.flip()
+        # IMPORTANT : plus de show_buttons ici, plus de flip ici
         return []
+
+
+
